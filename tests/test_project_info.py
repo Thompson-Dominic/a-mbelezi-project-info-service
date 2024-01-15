@@ -1,18 +1,62 @@
+"""Test the ProjectInfo class."""
 import unittest
-from src.ProjectInfo.ProjectInfo import ProjectInfo
-from src.ProjectInfo.ProjectStatus import ProjectStatus
+import uuid
 from datetime import datetime
 
+from src.ProjectInfo.ProjectInfo import ProjectInfo
+from src.ProjectInfo.ProjectStatus import ProjectStatus
+
+
+from src.ProjectInfo.events.ProjectCreatedEvent import ProjectCreatedEvent
+from src.ProjectInfo.events.ProjectStatusChangedEvent import ProjectStatusChangedEvent
+
 class TestProjectInfo(unittest.TestCase):
+    """Test the ProjectInfo class."""
     def setUp(self):
         """Set up a ProjectInfo instance for testing."""
-        self.project_info = ProjectInfo("Project1", "This is a test project", 4, 1000.0, "USD", datetime.now())
+        # self.project_info = ProjectInfo("Project1", "This is a test project", 4, 1000.0, "USD", datetime.now())
+        self.project_info = ProjectInfo("Project1", "This is a test project", 4, 1000.0, "USD", datetime.now(), 1, 1, "Community1", None)
+
+    def test_init(self):
+        """Test the __init__ method."""
+        self.assertEqual(self.project_info.name, "Project1")
+        self.assertEqual(self.project_info.description, "This is a test project")
+        self.assertEqual(self.project_info.timeline_in_weeks, 4)
+        self.assertEqual(self.project_info.budget, 1000.0)
+        self.assertEqual(self.project_info.budget_currency, "USD")
+        self.assertIsInstance(self.project_info.approved_date, datetime)
+        self.assertEqual(self.project_info.project_classification_id, 1)
+        self.assertEqual(self.project_info.locality_id, 1)
+        self.assertEqual(self.project_info.community, "Community1")
+        self.assertEqual(self.project_info.project_status, ProjectStatus.NOT_STARTED)
+        self.assertIsInstance(self.project_info.get_id(), uuid.UUID)
+
+    def test_init_with_missing_args(self):
+        """Test the __init__ method with missing arguments."""
+        with self.assertRaises(ValueError):
+            ProjectInfo(None, "This is a test project", 4, 1000.0, "USD", datetime.now(), 1, 1, "Community1", uuid.uuid4())
+
+    def test_project_status(self):
+        """Test the project status changes."""
+        self.assertEqual(self.project_info.project_status, ProjectStatus.NOT_STARTED)
+        self.assertTrue(any(isinstance(item, ProjectCreatedEvent) for item  in self.project_info.get_events()))
+        self.project_info.start_project()
+        self.assertEqual(self.project_info.project_status, ProjectStatus.IN_PROGRESS)
+        self.assertTrue(any(isinstance(item, ProjectStatusChangedEvent) for item  in self.project_info.get_events()))
+        self.project_info.hold_project()
+        self.assertTrue(any(isinstance(item, ProjectStatusChangedEvent) for item  in self.project_info.get_events()))
+        self.assertEqual(self.project_info.project_status, ProjectStatus.ON_HOLD)
+        self.project_info.complete_project()
+        self.assertTrue(any(isinstance(item, ProjectStatusChangedEvent) for item  in self.project_info.get_events()))
+        self.assertEqual(self.project_info.project_status, ProjectStatus.COMPLETED)
+
 
     def test_name(self):
         """Test the getter, setter, and deleter for name."""
         self.project_info.name = "Project1"
         self.assertEqual(self.project_info.name, "Project1")
         del self.project_info.name
+        # self.assertRaises(AttributeError, self.project_info.name)
         with self.assertRaises(AttributeError):
             self.project_info.name
 
@@ -81,10 +125,6 @@ class TestProjectInfo(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.project_info.community
 
-    def test_projectStatus(self):
-        """Test the getter and setter for projectStatus."""
-        self.project_info.projectStatus = ProjectStatus.IN_PROGRESS
-        self.assertEqual(self.project_info.projectStatus, ProjectStatus.IN_PROGRESS)
 
 if __name__ == '__main__':
     unittest.main()

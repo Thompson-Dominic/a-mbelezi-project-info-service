@@ -1,6 +1,10 @@
-from datetime import datetime
+""" This module contains the ProjectInfo class."""
 
-from src.SeedWork.BaseDomain import BaseDomain
+from datetime import datetime
+import uuid
+from .events.ProjectCreatedEvent import ProjectCreatedEvent
+from .events.ProjectStatusChangedEvent import ProjectStatusChangedEvent
+from ..SeedWork.BaseDomain import BaseDomain
 from . import ProjectStatus
 
 class ProjectInfo(BaseDomain):
@@ -15,11 +19,32 @@ class ProjectInfo(BaseDomain):
     __project_classification_id = None
     __locality_id = None
     __community = None
-    __projectStatus = None
+    __project_status = None
 
     def __init__(self, name: str, description: str, timeline_in_weeks: int, budget: float, 
                  budget_currency: str, approved_date: datetime, project_classification_id: int = None, 
-                 locality_id: int = None, community: str = None):
+                 locality_id: int = None, community: str = None, project_id:uuid = None):
+        """ Initialize a new instance of the ProjectInfo class.
+        
+        Args:
+        
+            name (str): The name of the project.
+            description (str): The description of the project.
+            timeline_in_weeks (int): The timeline of the project in weeks.
+            budget (float): The budget of the project.
+            budget_currency (str): The currency of the project's budget.   
+            approved_date (datetime): The approved date of the project.
+            project_classification_id (int): The classification id of the project.
+            locality_id (int): The locality id of the project.
+            community (str): The community of the project.
+            id (uuid): The id of the project.
+                
+        """
+        
+        validate_args = [name, description, timeline_in_weeks, budget, budget_currency, approved_date]
+        if any(arg is None for arg in validate_args):
+            raise ValueError(f"Key arguments are required. Got {validate_args}")
+        
         self.__name = name
         self.__description = description
         self.__timeline_in_weeks = timeline_in_weeks
@@ -29,7 +54,12 @@ class ProjectInfo(BaseDomain):
         self.__project_classification_id = project_classification_id
         self.__locality_id = locality_id
         self.__community = community
-        self.__projectStatus = ProjectStatus.ProjectStatus.NOT_STARTED
+        self.__project_status = ProjectStatus.ProjectStatus.NOT_STARTED
+        super().__init__(project_id)
+
+        if self.is_transient():
+            self.generate_id()
+            self.initiate_project()
 
     # Getter, Setter and Deleter for name
     @property
@@ -196,11 +226,33 @@ class ProjectInfo(BaseDomain):
     
     # Getter and Setter for projectStatus
     @property
-    def projectStatus(self) -> ProjectStatus:
+    def project_status(self) -> ProjectStatus:
         """Get the status of the project."""
-        return self.__projectStatus
+        return self.__project_status
 
-    @projectStatus.setter
-    def projectStatus(self, projectStatus: ProjectStatus):
+    @project_status.setter
+    def project_status(self, project_status: ProjectStatus):
         """Set the status of the project."""
-        self.__projectStatus = projectStatus
+        self.__project_status = project_status
+
+
+    #Core Domain Logic
+    def initiate_project(self):
+        """Initiate the project."""
+        self.project_status = ProjectStatus.ProjectStatus.NOT_STARTED
+        self.add_event(ProjectCreatedEvent(self.get_id(), self.__name))
+
+    def start_project(self):
+        """Start the project."""
+        self.project_status = ProjectStatus.ProjectStatus.IN_PROGRESS
+        self.add_event(ProjectStatusChangedEvent(self.get_id(), self.project_status))
+
+    def complete_project(self):
+        """Complete the project."""
+        self.project_status = ProjectStatus.ProjectStatus.COMPLETED
+        self.add_event(ProjectStatusChangedEvent(self.get_id(), self.project_status))
+    
+    def hold_project(self):
+        """Hold the project."""
+        self.project_status = ProjectStatus.ProjectStatus.ON_HOLD
+        self.add_event(ProjectStatusChangedEvent(self.get_id(), self.project_status))

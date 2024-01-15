@@ -1,43 +1,48 @@
+""" This module contains the basic models for the project info """
 import uuid
 from src.SeedWork.BaseDomain import BaseDomain
 
 
 class ProjectSection(BaseDomain):
-    __sectionName = None
+    """ This class models basic information about a project section"""
+    __section_name = None
     __project_id = None
     __details = None
 
 
-    def __init__(self, sectionName: str, project_id: uuid, details: str):
+    def __init__(self, section_name: str, project_id: uuid, details: str, project_section_id: uuid = None):
         """
         Initialize a new instance of the ProjectSection class.
 
         Args:
-            sectionName (str): The name of the project section.
+            section_name (str): The name of the project section.
             project_id (int): The id of the project.
             details (str): The details of the project section.
         """
-        self.__sectionName = sectionName
+        self.__section_name = section_name
         self.__project_id = project_id
         self.__details = details
+        super().__init__(project_section_id)
+        if self.is_transient():
+            self.generate_id()
 
-    # Getter, Setter and Deleter for sectionName
+    # Getter, Setter and Deleter for section_name
     @property
-    def sectionName(self) -> str:
+    def section_name(self) -> str:
         """Get the section name of the project."""
-        if self.__sectionName is None:
+        if self.__section_name is None:
             raise AttributeError("section Name is not defined.")
-        return self.__sectionName
+        return self.__section_name
 
-    @sectionName.setter
-    def sectionName(self, sectionName: str):
+    @section_name.setter
+    def section_name(self, section_name: str):
         """Set the section name of the project."""
-        self.__sectionName = sectionName
+        self.__section_name = section_name
 
-    @sectionName.deleter
-    def sectionName(self):
+    @section_name.deleter
+    def section_name(self):
         """Delete the section name of the project."""
-        del self.__sectionName
+        del self.__section_name
         
 
 
